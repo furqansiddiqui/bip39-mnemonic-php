@@ -75,6 +75,8 @@ var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130
 
 ## Generate non-english mnemonic codes
 
+Mnemonic codes may be generated in ALL languages supported in BIP39 spec. This example generates 12 mnemonic codes in Spanish language as an example and it may be replaced with other any other language with wordlists in BIP39 spec, check [here](https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md).
+
 ```php
 <?php
 declare(strict_types=1);
