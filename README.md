@@ -44,7 +44,7 @@ var_dump($mnemonic->entropy);
 
 ### Generate Mnemonic using specified Entropy
 
-Specify your own entropy to generate mnemonic codes
+Specify your own entropy to generate mnemonic codes:
 
 ```php
 <?php
@@ -58,7 +58,7 @@ var_dump($mnemonic);
 
 ### Reverse
 
-Use mnemonic codes to find entropy
+Use mnemonic codes to find entropy. By default lib will cross-check checksum therefore not using valid mnemonic codes will throw an exception.
 
 ```php
 <?php
