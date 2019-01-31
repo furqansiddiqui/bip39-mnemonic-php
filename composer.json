@@ -1,0 +1,23 @@
+{
+  "name": "furqansiddiqui/bip39-mnemonics-php",
+  "type": "library",
+  "description": "BIP39 Mnemonics implementation in PHP",
+  "keywords": [
+    "bip39",
+    "BIP-0039",
+    "mnemonics"
+  ],
+  "license": "MIT",
+  "require": {
+    "php": ">=7.2.0",
+    "furqansiddiqui/http-client": "dev-master"
+  },
+  "autoload": {
+    "psr-4": {
+      "furqansiddiqui\\BIP39\\": [
+        "src"
+      ]
+    }
+  },
+  "minimum-stability": "dev"
+}
