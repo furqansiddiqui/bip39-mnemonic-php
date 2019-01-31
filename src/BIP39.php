@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace furqansiddiqui\BIP39;
 
 use furqansiddiqui\BIP39\Exception\MnemonicException;
+use furqansiddiqui\BIP39\Exception\WordlistException;
 
 /**
  * Class BIP39
@@ -31,18 +32,22 @@ class BIP39
     /** @var int */
     private $entropyBits;
     /** @var null|string */
-    public $entropy;
+    private $entropy;
     /** @var null|string */
-    public $checksum;
+    private $checksum;
     /** @var null|array */
-    public $rawBinaryChunks;
+    private $rawBinaryChunks;
     /** @var null|array */
-    public $words;
+    private $words;
+
+    /** @var null|Wordlist */
+    private $wordlist;
 
     /**
      * @param string $entropy
      * @return Mnemonic
      * @throws MnemonicException
+     * @throws WordlistException
      */
     public static function Entropy(string $entropy): Mnemonic
     {
@@ -53,6 +58,7 @@ class BIP39
         $wordsCount = ($entropyBits + $checksumBits) / 11;
         return (new self($wordsCount))
             ->useEntropy($entropy)
+            ->wordlist(Wordlist::English())
             ->mnemonic();
     }
 
@@ -60,11 +66,13 @@ class BIP39
      * @param int $wordCount
      * @return Mnemonic
      * @throws MnemonicException
+     * @throws WordlistException
      */
     public static function Generate(int $wordCount = 12): Mnemonic
     {
         return (new self($wordCount))
             ->generateSecureEntropy()
+            ->wordlist(Wordlist::English())
             ->mnemonic();
     }
 
@@ -135,11 +143,15 @@ class BIP39
             throw new MnemonicException('Entropy is not defined');
         }
 
+        if (!$this->wordlist) {
+            throw new MnemonicException('Wordlist is not defined');
+        }
+
         $mnemonic = new Mnemonic($this->entropy);
         foreach ($this->rawBinaryChunks as $bit) {
             $index = bindec($bit);
             $mnemonic->wordsIndex[] = $index;
-            $mnemonic->words[] = "";
+            $mnemonic->words[] = $this->wordlist->getWord($index);
             $mnemonic->rawBinaryChunks[] = $bit;
             $mnemonic->wordsCount++;
         }
@@ -147,6 +159,15 @@ class BIP39
         return $mnemonic;
     }
 
+    /**
+     * @param Wordlist $wordlist
+     * @return BIP39
+     */
+    public function wordlist(Wordlist $wordlist): self
+    {
+        $this->wordlist = $wordlist;
+        return $this;
+    }
 
     /**
      * @param string $hex
