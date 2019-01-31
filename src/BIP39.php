@@ -77,6 +77,30 @@ class BIP39
     }
 
     /**
+     * @param $words
+     * @param Wordlist|null $wordlist
+     * @param bool $verifyChecksum
+     * @return Mnemonic
+     * @throws MnemonicException
+     * @throws WordlistException
+     */
+    public static function Words($words, ?Wordlist $wordlist = null, bool $verifyChecksum = true): Mnemonic
+    {
+        if (is_string($words)) {
+            $words = explode(" ", $words);
+        }
+
+        if (!is_array($words)) {
+            throw new MnemonicException('Mnemonic constructor requires an Array of words');
+        }
+
+        $wordCount = count($words);
+        return (new self($wordCount))
+            ->wordlist($wordlist ?? Wordlist::English())
+            ->reverse($words, $verifyChecksum);
+    }
+
+    /**
      * BIP39 constructor.
      * @param int $wordCount
      * @throws MnemonicException
@@ -108,17 +132,8 @@ class BIP39
     {
         self::validateEntropy($entropy);
         $this->entropy = $entropy;
-
-        $checksumChar = ord(hash("sha256", hex2bin($this->entropy), true)[0]);
-        $checksum = '';
-        for ($i = 0; $i < $this->checksumBits; $i++) {
-            $checksum .= $checksumChar >> (7 - $i) & 1;
-        }
-
-        $this->checksum = $checksum;
-        $this->rawBinaryChunks = str_split($this->hex2bits($this->entropy) . $checksum, 11);
-
-
+        $this->checksum = $this->checksum($entropy, $this->checksumBits);
+        $this->rawBinaryChunks = str_split($this->hex2bits($this->entropy) . $this->checksum, 11);
         return $this;
     }
 
@@ -170,6 +185,50 @@ class BIP39
     }
 
     /**
+     * @param array $words
+     * @param bool $verifyChecksum
+     * @return Mnemonic
+     * @throws MnemonicException
+     * @throws WordlistException
+     */
+    public function reverse(array $words, bool $verifyChecksum = true)
+    {
+        if (!$this->wordlist) {
+            throw new MnemonicException('Wordlist is not defined');
+        }
+
+        $mnemonic = new Mnemonic();
+        $pos = 0;
+        foreach ($words as $word) {
+            $pos++;
+            $index = $this->wordlist->findIndex($word);
+            if (is_null($index)) {
+                throw new WordlistException(sprintf('Invalid/unknown word at position %d', $pos));
+            }
+
+            $mnemonic->words[] = $word;
+            $mnemonic->wordsIndex[] = $index;
+            $mnemonic->wordsCount++;
+            $mnemonic->rawBinaryChunks[] = str_pad(decbin($index), 11, '0', STR_PAD_LEFT);
+        }
+
+        $rawBinary = implode('', $mnemonic->rawBinaryChunks);
+        $entropyBits = substr($rawBinary, 0, $this->entropyBits);
+        $checksumBits = substr($rawBinary, $this->entropyBits, $this->checksumBits);
+
+        $mnemonic->entropy = $this->bits2hex($entropyBits);
+
+        // Verify Checksum?
+        if ($verifyChecksum) {
+            if (!hash_equals($checksumBits, $this->checksum($mnemonic->entropy, $this->checksumBits))) {
+                throw new MnemonicException('Entropy checksum match failed');
+            }
+        }
+
+        return $mnemonic;
+    }
+
+    /**
      * @param string $hex
      * @return string
      */
@@ -180,6 +239,36 @@ class BIP39
             $bits .= str_pad(base_convert($hex[$i], 16, 2), 4, '0', STR_PAD_LEFT);
         }
         return $bits;
+    }
+
+    /**
+     * @param string $bits
+     * @return string
+     */
+    private function bits2hex(string $bits): string
+    {
+        $hex = "";
+        foreach (str_split($bits, 4) as $chunk) {
+            $hex .= base_convert($chunk, 2, 16);
+        }
+
+        return $hex;
+    }
+
+    /**
+     * @param string $entropy
+     * @param int $bits
+     * @return string
+     */
+    private function checksum(string $entropy, int $bits): string
+    {
+        $checksumChar = ord(hash("sha256", hex2bin($entropy), true)[0]);
+        $checksum = '';
+        for ($i = 0; $i < $bits; $i++) {
+            $checksum .= $checksumChar >> (7 - $i) & 1;
+        }
+
+        return $checksum;
     }
 
     /**
