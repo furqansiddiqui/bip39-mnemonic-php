@@ -145,13 +145,10 @@ class Wordlist
     public function findIndex(string $search): ?int
     {
         $search = mb_strtolower($search);
-        $pos = 0;
-        foreach ($this->words as $word) {
+        foreach ($this->words as $pos => $word) {
             if ($search === $word) {
                 return $pos;
             }
-
-            $pos++;
         }
 
         return null;
