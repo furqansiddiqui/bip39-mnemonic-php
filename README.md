@@ -1,2 +1,3 @@
-# mnemonics-bip39
-Mnemonic BIP39 assisting lib
+# BIP39 Mnemonic
+
+Mnemonic BIP39 implementation in PHP
