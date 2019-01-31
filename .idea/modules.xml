@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/bip39-mnemonics-php.iml" filepath="$PROJECT_DIR$/.idea/bip39-mnemonics-php.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/bip39-mnemonic-php.iml" filepath="$PROJECT_DIR$/.idea/bip39-mnemonic-php.iml" />
     </modules>
   </component>
 </project>
