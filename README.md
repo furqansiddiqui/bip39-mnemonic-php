@@ -39,7 +39,7 @@ $mnemonic = BIP39::Generate(12);
 var_dump($mnemonic->words);
 # array(12) { [0]=> string(6) "barrel" [1]=> string(6) "viable" [2]=> string(6) "become" [3]=> string(4) "kiss" [4]=> string(6) "spider" [5]=> string(8) "business" [6]=> string(4) "wool" [7]=> string(6) "amused" [8]=> string(7) "satoshi" [9]=> string(4) "duty" [10]=> string(4) "girl" [11]=> string(5) "april" }
 var_dump($mnemonic->entropy);
-# 12de684fbd6d1a3e3f5041bf68918905
+# string(32) "12de684fbd6d1a3e3f5041bf68918905" 
 ```
 
 ## Generate Mnemonic using specified Entropy
@@ -59,7 +59,7 @@ var_dump($mnemonic->rawBinaryChunks); # array(24) { [0]=> string(11) "1111010001
 var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b"
 ```
 
-## Reverse
+## Reverse (Mnemonic to Entropy)
 
 Use mnemonic codes to find entropy. By default lib will cross-check checksum therefore not using valid mnemonic codes will throw an exception.
 
@@ -71,4 +71,22 @@ use \furqansiddiqui\BIP39\BIP39;
 
 $mnemonic = BIP39::Words("virtual wear number paddle spike usage degree august buffalo layer high pelican basic duty gate uphold offer reopen favorite please acoustic version clay leader");
 var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b"
+```
+
+## Generate non-english mnemonic codes
+
+```php
+<?php
+declare(strict_types=1);
+
+use \furqansiddiqui\BIP39\BIP39;
+use \furqansiddiqui\BIP39\Wordlist;
+
+$mnemonic = (new BIP39(12)) // 12 words
+    ->generateSecureEntropy() // Generate cryptographically secure entropy
+    ->wordlist(Wordlist::Spanish()) // Use Spanish wordlist
+    ->mnemonic(); // Generate mnemonic
+    
+print $mnemonic->words; # bastón tímido turismo pez pez fideo pellejo persona brinco yoga rasgo diluir
+print $mnemonic->entropy; # 1c9cfbc5d93b26b12bcd8c229fdb07a2
 ```
