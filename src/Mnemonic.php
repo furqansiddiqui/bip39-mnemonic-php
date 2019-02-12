@@ -43,4 +43,20 @@ class Mnemonic
         $this->words = [];
         $this->rawBinaryChunks = [];
     }
+
+    /**
+     * @param string $passphrase
+     * @param int $bytes
+     * @return string
+     */
+    public function generateSeed(string $passphrase = "", int $bytes = 0): string
+    {
+        return hash_pbkdf2(
+            "sha512",
+            implode(" ", $this->words),
+            "mnemonic" . $passphrase,
+            2048,
+            $bytes
+        );
+    }
 }
