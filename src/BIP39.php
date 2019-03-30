@@ -12,18 +12,18 @@
 
 declare(strict_types=1);
 
-namespace furqansiddiqui\BIP39;
+namespace FurqanSiddiqui\BIP39;
 
-use furqansiddiqui\BIP39\Exception\MnemonicException;
-use furqansiddiqui\BIP39\Exception\WordlistException;
+use FurqanSiddiqui\BIP39\Exception\MnemonicException;
+use FurqanSiddiqui\BIP39\Exception\WordListException;
 
 /**
  * Class BIP39
- * @package furqansiddiqui\BIP39
+ * @package FurqanSiddiqui\BIP39
  */
 class BIP39
 {
-    public const VERSION    =   "0.1.1";
+    public const VERSION = "0.1.2";
 
     /** @var int */
     private $wordsCount;
@@ -42,14 +42,14 @@ class BIP39
     /** @var null|array */
     private $words;
 
-    /** @var null|Wordlist */
-    private $wordlist;
+    /** @var null|WordList */
+    private $wordList;
 
     /**
      * @param string $entropy
      * @return Mnemonic
      * @throws MnemonicException
-     * @throws WordlistException
+     * @throws WordListException
      */
     public static function Entropy(string $entropy): Mnemonic
     {
@@ -60,7 +60,7 @@ class BIP39
         $wordsCount = ($entropyBits + $checksumBits) / 11;
         return (new self($wordsCount))
             ->useEntropy($entropy)
-            ->wordlist(Wordlist::English())
+            ->wordlist(WordList::English())
             ->mnemonic();
     }
 
@@ -68,25 +68,25 @@ class BIP39
      * @param int $wordCount
      * @return Mnemonic
      * @throws MnemonicException
-     * @throws WordlistException
+     * @throws WordListException
      */
     public static function Generate(int $wordCount = 12): Mnemonic
     {
         return (new self($wordCount))
             ->generateSecureEntropy()
-            ->wordlist(Wordlist::English())
+            ->wordlist(WordList::English())
             ->mnemonic();
     }
 
     /**
      * @param $words
-     * @param Wordlist|null $wordlist
+     * @param WordList|null $wordList
      * @param bool $verifyChecksum
      * @return Mnemonic
      * @throws MnemonicException
-     * @throws WordlistException
+     * @throws WordListException
      */
-    public static function Words($words, ?Wordlist $wordlist = null, bool $verifyChecksum = true): Mnemonic
+    public static function Words($words, ?WordList $wordList = null, bool $verifyChecksum = true): Mnemonic
     {
         if (is_string($words)) {
             $words = explode(" ", $words);
@@ -98,7 +98,7 @@ class BIP39
 
         $wordCount = count($words);
         return (new self($wordCount))
-            ->wordlist($wordlist ?? Wordlist::English())
+            ->wordlist($wordList ?? WordList::English())
             ->reverse($words, $verifyChecksum);
     }
 
@@ -160,15 +160,15 @@ class BIP39
             throw new MnemonicException('Entropy is not defined');
         }
 
-        if (!$this->wordlist) {
-            throw new MnemonicException('Wordlist is not defined');
+        if (!$this->wordList) {
+            throw new MnemonicException('Word list is not defined');
         }
 
         $mnemonic = new Mnemonic($this->entropy);
         foreach ($this->rawBinaryChunks as $bit) {
             $index = bindec($bit);
             $mnemonic->wordsIndex[] = $index;
-            $mnemonic->words[] = $this->wordlist->getWord($index);
+            $mnemonic->words[] = $this->wordList->getWord($index);
             $mnemonic->rawBinaryChunks[] = $bit;
             $mnemonic->wordsCount++;
         }
@@ -177,12 +177,12 @@ class BIP39
     }
 
     /**
-     * @param Wordlist $wordlist
+     * @param WordList $wordList
      * @return BIP39
      */
-    public function wordlist(Wordlist $wordlist): self
+    public function wordList(WordList $wordList): self
     {
-        $this->wordlist = $wordlist;
+        $this->wordList = $wordList;
         return $this;
     }
 
@@ -191,11 +191,11 @@ class BIP39
      * @param bool $verifyChecksum
      * @return Mnemonic
      * @throws MnemonicException
-     * @throws WordlistException
+     * @throws WordListException
      */
     public function reverse(array $words, bool $verifyChecksum = true)
     {
-        if (!$this->wordlist) {
+        if (!$this->wordList) {
             throw new MnemonicException('Wordlist is not defined');
         }
 
@@ -203,9 +203,9 @@ class BIP39
         $pos = 0;
         foreach ($words as $word) {
             $pos++;
-            $index = $this->wordlist->findIndex($word);
+            $index = $this->wordList->findIndex($word);
             if (is_null($index)) {
-                throw new WordlistException(sprintf('Invalid/unknown word at position %d', $pos));
+                throw new WordListException(sprintf('Invalid/unknown word at position %d', $pos));
             }
 
             $mnemonic->words[] = $word;

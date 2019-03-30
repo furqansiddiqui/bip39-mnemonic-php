@@ -12,11 +12,11 @@
 
 declare(strict_types=1);
 
-namespace furqansiddiqui\BIP39;
+namespace FurqanSiddiqui\BIP39;
 
 /**
  * Class Mnemonic
- * @package furqansiddiqui\BIP39
+ * @package FurqanSiddiqui\BIP39
  */
 class Mnemonic
 {

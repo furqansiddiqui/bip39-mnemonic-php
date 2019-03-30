@@ -12,12 +12,12 @@
 
 declare(strict_types=1);
 
-namespace furqansiddiqui\BIP39\Exception;
+namespace FurqanSiddiqui\BIP39\Exception;
 
 /**
- * Class WordlistException
- * @package furqansiddiqui\BIP39\Exception
+ * Class WordListException
+ * @package FurqanSiddiqui\BIP39\Exception
  */
-class WordlistException extends BIP39_Exception
+class WordListException extends BIP39_Exception
 {
 }

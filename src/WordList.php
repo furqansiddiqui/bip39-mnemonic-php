@@ -12,15 +12,15 @@
 
 declare(strict_types=1);
 
-namespace furqansiddiqui\BIP39;
+namespace FurqanSiddiqui\BIP39;
 
-use furqansiddiqui\BIP39\Exception\WordlistException;
+use FurqanSiddiqui\BIP39\Exception\WordListException;
 
 /**
- * Class Wordlist
- * @package furqansiddiqui\BIP39
+ * Class WordList
+ * @package FurqanSiddiqui\BIP39
  */
-class Wordlist
+class WordList
 {
     private static $instances = [];
 
@@ -32,8 +32,8 @@ class Wordlist
     private $count;
 
     /**
-     * @return Wordlist
-     * @throws WordlistException
+     * @return WordList
+     * @throws WordListException
      */
     public static function English(): self
     {
@@ -41,8 +41,8 @@ class Wordlist
     }
 
     /**
-     * @return Wordlist
-     * @throws WordlistException
+     * @return WordList
+     * @throws WordListException
      */
     public static function French(): self
     {
@@ -50,8 +50,8 @@ class Wordlist
     }
 
     /**
-     * @return Wordlist
-     * @throws WordlistException
+     * @return WordList
+     * @throws WordListException
      */
     public static function Italian(): self
     {
@@ -59,8 +59,8 @@ class Wordlist
     }
 
     /**
-     * @return Wordlist
-     * @throws WordlistException
+     * @return WordList
+     * @throws WordListException
      */
     public static function Spanish(): self
     {
@@ -69,8 +69,8 @@ class Wordlist
 
     /**
      * @param string $lang
-     * @return Wordlist
-     * @throws WordlistException
+     * @return WordList
+     * @throws WordListException
      */
     public static function getLanguage(string $lang = "english"): self
     {
@@ -79,15 +79,15 @@ class Wordlist
             return $instance;
         }
 
-        $wordlist = new self($lang);
-        self::$instances[$lang] = $wordlist;
+        $wordList = new self($lang);
+        self::$instances[$lang] = $wordList;
         return self::getLanguage($lang);
     }
 
     /**
-     * Wordlist constructor.
+     * WordList constructor.
      * @param string $language
-     * @throws WordlistException
+     * @throws WordListException
      */
     public function __construct(string $language = "english")
     {
@@ -95,21 +95,21 @@ class Wordlist
         $this->words = [];
         $this->count = 0;
 
-        $wordlistFile = sprintf('%1$s%2$swordlists%2$s%3$s.txt', __DIR__, DIRECTORY_SEPARATOR, $this->language);
-        if (!file_exists($wordlistFile) || !is_readable($wordlistFile)) {
-            throw new WordlistException(
+        $wordListFile = sprintf('%1$s%2$swordlists%2$s%3$s.txt', __DIR__, DIRECTORY_SEPARATOR, $this->language);
+        if (!file_exists($wordListFile) || !is_readable($wordListFile)) {
+            throw new WordListException(
                 sprintf('BIP39 wordlist for "%s" not found or is not readable', ucfirst($this->language))
             );
         }
 
-        $wordlist = preg_split("/(\r\n|\n|\r)/", file_get_contents($wordlistFile));
-        foreach ($wordlist as $word) {
+        $wordList = preg_split("/(\r\n|\n|\r)/", file_get_contents($wordListFile));
+        foreach ($wordList as $word) {
             $this->words[] = trim($word);
             $this->count++;
         }
 
         if ($this->count !== 2048) {
-            throw new WordlistException('BIP39 wordlist file must have precise 2048 entries');
+            throw new WordListException('BIP39 words list file must have precise 2048 entries');
         }
     }
 
