@@ -23,7 +23,7 @@ use FurqanSiddiqui\BIP39\Exception\WordListException;
  */
 class BIP39
 {
-    public const VERSION = "0.1.3";
+    public const VERSION = "0.1.4";
 
     /** @var int */
     private $wordsCount;
