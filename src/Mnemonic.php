@@ -56,7 +56,8 @@ class Mnemonic
             implode(" ", $this->words),
             "mnemonic" . $passphrase,
             2048,
-            $bytes
+            $bytes,
+            true
         );
     }
 }

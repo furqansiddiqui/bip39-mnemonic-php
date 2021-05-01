@@ -23,7 +23,7 @@ use FurqanSiddiqui\BIP39\Exception\WordListException;
  */
 class BIP39
 {
-    public const VERSION = "0.1.2";
+    public const VERSION = "0.1.3";
 
     /** @var int */
     private $wordsCount;
@@ -35,12 +35,8 @@ class BIP39
     private $entropyBits;
     /** @var null|string */
     private $entropy;
-    /** @var null|string */
-    private $checksum;
     /** @var null|array */
     private $rawBinaryChunks;
-    /** @var null|array */
-    private $words;
 
     /** @var null|WordList */
     private $wordList;
@@ -134,8 +130,8 @@ class BIP39
     {
         self::validateEntropy($entropy);
         $this->entropy = $entropy;
-        $this->checksum = $this->checksum($entropy, $this->checksumBits);
-        $this->rawBinaryChunks = str_split($this->hex2bits($this->entropy) . $this->checksum, 11);
+        $checksum = $this->checksum($entropy, $this->checksumBits);
+        $this->rawBinaryChunks = str_split($this->hex2bits($this->entropy) . $checksum, 11);
         return $this;
     }
 
@@ -193,7 +189,7 @@ class BIP39
      * @throws MnemonicException
      * @throws WordListException
      */
-    public function reverse(array $words, bool $verifyChecksum = true)
+    public function reverse(array $words, bool $verifyChecksum = true): Mnemonic
     {
         if (!$this->wordList) {
             throw new MnemonicException('Wordlist is not defined');
