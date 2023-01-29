@@ -22,14 +22,15 @@ use FurqanSiddiqui\BIP39\Exception\WordListException;
  */
 class WordList
 {
-    private static $instances = [];
+    /** @var array */
+    private static array $instances = [];
 
     /** @var string */
-    private $language;
+    public readonly string $language;
     /** @var array */
-    private $words;
+    public readonly array $words;
     /** @var int */
-    private $count;
+    public readonly int $count;
 
     /**
      * @return WordList
@@ -92,8 +93,8 @@ class WordList
     public function __construct(string $language = "english")
     {
         $this->language = trim($language);
-        $this->words = [];
-        $this->count = 0;
+        $words = [];
+        $count = 0;
 
         $wordListFile = sprintf('%1$s%2$swordlists%2$s%3$s.txt', __DIR__, DIRECTORY_SEPARATOR, $this->language);
         if (!file_exists($wordListFile) || !is_readable($wordListFile)) {
@@ -104,10 +105,12 @@ class WordList
 
         $wordList = preg_split("/(\r\n|\n|\r)/", file_get_contents($wordListFile));
         foreach ($wordList as $word) {
-            $this->words[] = trim($word);
-            $this->count++;
+            $words[] = mb_strtolower(trim($word));
+            $count++;
         }
 
+        $this->words = $words;
+        $this->count = $count;
         if ($this->count !== 2048) {
             throw new WordListException('BIP39 words list file must have precise 2048 entries');
         }
@@ -122,29 +125,12 @@ class WordList
     }
 
     /**
-     * @return string
-     */
-    public function which(): string
-    {
-        return $this->language;
-    }
-
-    /**
-     * @param int $index
-     * @return string|null
-     */
-    public function getWord(int $index): ?string
-    {
-        return $this->words[$index] ?? null;
-    }
-
-    /**
-     * @param string $search
+     * @param string $word
      * @return int|null
      */
-    public function findIndex(string $search): ?int
+    public function findIndex(string $word): ?int
     {
-        $search = mb_strtolower($search);
+        $search = mb_strtolower($word);
         foreach ($this->words as $pos => $word) {
             if ($search === $word) {
                 return $pos;
