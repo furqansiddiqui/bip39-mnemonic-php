@@ -6,7 +6,7 @@ Mnemonic BIP39 implementation in PHP
 
 ### Prerequisite
 
-* PHP 7.2+
+* PHP ^8.1
 * [ext-mbstring](http://php.net/manual/en/book.mbstring.php) (MultiByte string PHP ext. for non-english wordlist)
 
 ### Composer
@@ -17,17 +17,18 @@ Mnemonic BIP39 implementation in PHP
 
 This lib will create this Mnemonic object as a result:
 
-| Prop | Data | Description
-| --- | --- | ---
-| entropy | string | Hexadecimal representation of binary Entropy bits
-| wordsCount | int | Number of words (12, 15,18, 21 or 24)
-| wordsIndex | array | Indexed array (of integers) indexes from wordlist
-| words | array | Indexed array of mnemonic codes
-| rawBinaryChunks | array | Indexed array of binary bits (1s and 0s) each containing 11 bits according to [BIP39 Spec](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
+| Prop            | Data   | Description                                                                                                                                                |
+|-----------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| entropy         | string | Hexadecimal representation of binary Entropy bits                                                                                                          |
+| wordsCount      | int    | Number of words (12, 15,18, 21 or 24)                                                                                                                      |
+| wordsIndex      | array  | Indexed array (of integers) indexes from wordlist                                                                                                          |
+| words           | array  | Indexed array of mnemonic codes                                                                                                                            |
+| rawBinaryChunks | array  | Indexed array of binary bits (1s and 0s) each containing 11 bits according to [BIP39 Spec](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) |
 
 ## Generate Mnemonic Codes (12, 15, 18, 21 or 24 words)
 
-Generate mnemonic of 12, 15, 18, 21 or 24 words using an entropy driven from cryptographically secure pseudo-random bytes. 
+Generate mnemonic of 12, 15, 18, 21 or 24 words using an entropy driven from cryptographically secure pseudo-random
+bytes.
 
 ```php
 <?php
@@ -55,13 +56,14 @@ use \FurqanSiddiqui\BIP39\BIP39;
 $mnemonic = BIP39::Entropy("f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b");
 var_dump($mnemonic->wordsCount); # int(24) 
 var_dump($mnemonic->words); # array(24) { [0]=> string(7) "virtual" [1]=> string(4) "wear" [2]=> stri...
-var_dump($mnemonic->rawBinaryChunks); # array(24) { [0]=> string(11) "11110100011" [1]=> string(11) "11111000011" [2]=> string(11) "10010...
+var_dump($mnemonic->binaryChunks); # array(24) { [0]=> string(11) "11110100011" [1]=> string(11) "11111000011" [2]=> string(11) "10010...
 var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b"
 ```
 
 ## Reverse (Mnemonic to Entropy)
 
-Use mnemonic codes to find entropy. By default lib will cross-check checksum therefore not using valid mnemonic codes will throw an exception.
+Use mnemonic codes to find entropy. By default, lib will cross-check checksum therefore not using valid mnemonic codes
+will throw an exception.
 
 ```php
 <?php
@@ -75,7 +77,9 @@ var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130
 
 ## Generate non-english mnemonic codes
 
-Mnemonic codes may be generated in ALL languages supported in BIP39 spec. This example generates 12 mnemonic codes in Spanish language as an example and it may be replaced with other any other language with wordlists in BIP39 spec, check [here](https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md).
+Mnemonic codes may be generated in ALL languages supported in BIP39 spec. This example generates 12 mnemonic codes in
+Spanish language as an example, and it may be replaced with other any other language with wordlists in BIP39 spec,
+check [here](https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md).
 
 ```php
 <?php
@@ -84,10 +88,8 @@ declare(strict_types=1);
 use \FurqanSiddiqui\BIP39\BIP39;
 use \FurqanSiddiqui\BIP39\Wordlist;
 
-$mnemonic = (new BIP39(12)) // 12 words
-    ->generateSecureEntropy() // Generate cryptographically secure entropy
-    ->wordlist(Wordlist::Spanish()) // Use Spanish wordlist
-    ->mnemonic(); // Generate mnemonic
+$mnemonic = (new BIP39(12, Wordlist::Spanish())) // 12 words, Spanish language
+    ->generateSecureMnemonic(); // Generate mnemonic
     
 print implode(" ", $mnemonic->words); # bastón tímido turismo pez pez fideo pellejo persona brinco yoga rasgo diluir
 print $mnemonic->entropy; # 1c9cfbc5d93b26b12bcd8c229fdb07a2

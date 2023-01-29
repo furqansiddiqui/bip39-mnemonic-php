@@ -20,28 +20,33 @@ namespace FurqanSiddiqui\BIP39;
  */
 class Mnemonic
 {
-    /** @var string */
-    public $entropy;
     /** @var int */
-    public $wordsCount;
+    public readonly int $wordsCount;
     /** @var array */
-    public $wordsIndex;
+    public readonly array $words;
     /** @var array */
-    public $words;
-    /** @var array */
-    public $rawBinaryChunks;
+    public readonly array $wordsIndex;
 
     /**
-     * Mnemonic constructor.
-     * @param string|null $entropy
+     * @param \FurqanSiddiqui\BIP39\WordList $lang
+     * @param string $entropy
+     * @param array $binaryChunks
      */
-    public function __construct(?string $entropy = null)
+    public function __construct(WordList $lang, public readonly string $entropy, public readonly array $binaryChunks)
     {
-        $this->entropy = $entropy;
-        $this->wordsCount = 0;
-        $this->wordsIndex = [];
-        $this->words = [];
-        $this->rawBinaryChunks = [];
+        $words = [];
+        $wordsIndex = [];
+        $wordsCount = 0;
+        foreach ($this->binaryChunks as $chunk) {
+            $index = bindec($chunk);
+            $wordsIndex[] = $index;
+            $words[] = $lang->words[$index];
+            $wordsCount++;
+        }
+
+        $this->wordsCount = $wordsCount;
+        $this->wordsIndex = $wordsIndex;
+        $this->words = $words;
     }
 
     /**
