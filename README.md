@@ -94,3 +94,9 @@ $mnemonic = (new BIP39(12, Wordlist::Spanish())) // 12 words, Spanish language
 print implode(" ", $mnemonic->words); # bastón tímido turismo pez pez fideo pellejo persona brinco yoga rasgo diluir
 print $mnemonic->entropy; # 1c9cfbc5d93b26b12bcd8c229fdb07a2
 ```
+
+## Test Vectors
+
+* **[29-01-2023]:** Test vectors mentioned
+  in [official BIP-0039 specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#user-content-Test_vectors)
+  are tested and included in package. Execute `tests/test_a.php` to re-run following tests.
