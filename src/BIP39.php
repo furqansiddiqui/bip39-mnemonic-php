@@ -23,9 +23,6 @@ use FurqanSiddiqui\BIP39\Exception\WordListException;
  */
 class BIP39
 {
-    /** @var string */
-    public const VERSION = "0.1.6";
-
     /** @var int */
     public readonly int $overallBits;
     /** @var int */
@@ -125,7 +122,7 @@ class BIP39
             throw new \RuntimeException('Failed to generate secure PRNG entropy');
         }
 
-        return $this->entropy2Mnemonic($prng);
+        return $this->entropy2Mnemonic(bin2hex($prng));
     }
 
     /**
