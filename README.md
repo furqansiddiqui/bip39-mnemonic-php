@@ -6,97 +6,159 @@ Mnemonic BIP39 implementation in PHP
 
 ### Prerequisite
 
-* PHP ^8.1
+* PHP ^8.2
 * [ext-mbstring](http://php.net/manual/en/book.mbstring.php) (MultiByte string PHP ext. for non-english wordlist)
 
 ### Composer
 
 `composer require furqansiddiqui/bip39-mnemonic-php`
 
-## Mnemonic Object
+## Generating a Secure Mnemonic
+
+Generate a mnemonic using a secure PRNG implementation.
+
+### `BIP39::fromRandom`
+
+| Argument   | Type               | Description                   |
+|------------|--------------------|-------------------------------|
+| $wordList  | `AbstractLanguage` | Langage instance for wordlist |
+| $wordCount | int                | Number of words (12-24)       |
+
+**Returns instance of [Mnemonic](#mnemonic-class) class.**
+
+#### Example:
+
+```php
+// Generate entropy using PRNG
+$mnemonic = \FurqanSiddiqui\BIP39\BIP39::fromRandom(
+    \FurqanSiddiqui\BIP39\Language\English::getInstance(),
+    wordCount: 12
+);
+
+# array(12) { [0]=> string(4) "tape" [1]=> string(8) "solution" ... [10]=> string(6) "border" [11]=> string(6) "sample" }
+var_dump($mnemonic->words);
+# string(32) "ddd9dbcd1b07a09c16f080637818675f"
+var_dump($mnemonic->entropy);
+```
+
+## Entropy to Mnemonic
+
+Generate mnemonic codes from given entropy
+
+### `BIP39::fromRandom`
+
+| Argument  | Type                | Description                   |
+|-----------|---------------------|-------------------------------|
+| $entropy  | `AbstractByteArray` | Entropy                       |
+| $wordList | `AbstractLanguage`  | Langage instance for wordlist |
+
+**Returns instance of [Mnemonic](#mnemonic-class) class.**
+
+#### Example:
+
+```php
+$mnemonic = \FurqanSiddiqui\BIP39\BIP39::fromEntropy(
+    \Charcoal\Buffers\Buffer::fromBase16("ddd9dbcd1b07a09c16f080637818675f"),
+    \FurqanSiddiqui\BIP39\Language\English::getInstance()
+);
+
+# array(12) { [0]=> string(4) "tape" [1]=> string(8) "solution" ... [10]=> string(6) "border" [11]=> string(6) "sample" }
+var_dump($mnemonic->words);
+```
+
+## Mnemonic sentence/Words to Mnemonic
+
+Generate entropy from mnemonic codes
+
+### `BIP39::fromWords`
+
+| Argument        | Type               | Description                                                           |
+|-----------------|--------------------|-----------------------------------------------------------------------|
+| $words          | Array\<string>     | Array of mnemonic codes                                               |
+| $wordList       | `AbstractLanguage` | Langage instance for wordlist                                         |
+| $verifyChecksum | bool               | Defaults to `TRUE`, computes and verifies checksum as per BIP39 spec. |
+
+**Returns instance of [Mnemonic](#mnemonic-class) class.**
+
+#### Example:
+
+```php
+$mnemonic = \FurqanSiddiqui\BIP39\BIP39::fromWords(
+    ["tape", "solution", "viable", "current", "key",
+        "evoke", "forward", "avoid", "gloom", "school", "border", "sample"],
+    \FurqanSiddiqui\BIP39\Language\English::getInstance()
+);
+
+#string(32) "ddd9dbcd1b07a09c16f080637818675f"
+var_dump($mnemonic->entropy);
+```
+## Mnemonic Class
+
+### `readonly class`  Mnemonic
 
 This lib will create this Mnemonic object as a result:
 
-| Prop            | Data   | Description                                                                                                                                                |
-|-----------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| entropy         | string | Hexadecimal representation of binary Entropy bits                                                                                                          |
-| wordsCount      | int    | Number of words (12, 15,18, 21 or 24)                                                                                                                      |
-| wordsIndex      | array  | Indexed array (of integers) indexes from wordlist                                                                                                          |
-| words           | array  | Indexed array of mnemonic codes                                                                                                                            |
-| rawBinaryChunks | array  | Indexed array of binary bits (1s and 0s) each containing 11 bits according to [BIP39 Spec](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) |
+| Property   | Type           | Description                                                           |
+|------------|----------------|-----------------------------------------------------------------------|
+| language   | string         | Language name (as it was passed to constructor of wordlist class)     |
+| words      | Array\<string> | Mnemonic codes                                                        |
+| wordsIndex | Array\<int>    | Position/index # of each mnemonic code corresponding to wordlist used |
+| wordsCount | int            | Number of mnemonic codes (i.e. 12, 15, 18, 21 or 24)                  |
+| entropy    | string         | Entropy in hexadecimal encoding                                       |
 
-## Generate Mnemonic Codes (12, 15, 18, 21 or 24 words)
 
-Generate mnemonic of 12, 15, 18, 21 or 24 words using an entropy driven from cryptographically secure pseudo-random
-bytes.
+### Generating Seed with Passphrase
 
-```php
-<?php
-declare(strict_types=1);
+#### `Mnemonic->generateSeed`
 
-use \FurqanSiddiqui\BIP39\BIP39;
+Generates seed from a mnemonic as per BIP39 specifications.
 
-$mnemonic = BIP39::Generate(12);
-var_dump($mnemonic->words);
-# array(12) { [0]=> string(6) "barrel" [1]=> string(6) "viable" [2]=> string(6) "become" [3]=> string(4) "kiss" [4]=> string(6) "spider" [5]=> string(8) "business" [6]=> string(4) "wool" [7]=> string(6) "amused" [8]=> string(7) "satoshi" [9]=> string(4) "duty" [10]=> string(4) "girl" [11]=> string(5) "april" }
-var_dump($mnemonic->entropy);
-# string(32) "12de684fbd6d1a3e3f5041bf68918905" 
-```
+| Argument    | Type   | Description                                |
+|-------------|--------|--------------------------------------------|
+| $passphrase | string | Defaults to empty string ("")              |
+| $bytes      | int    | Number of bytes to return, defaults to 64. |
 
-## Generate Mnemonic using specified Entropy
+**Returns**:
 
-Specify your own entropy to generate mnemonic codes:
-
-```php
-<?php
-declare(strict_types=1);
-
-use \FurqanSiddiqui\BIP39\BIP39;
-
-$mnemonic = BIP39::Entropy("f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b");
-var_dump($mnemonic->wordsCount); # int(24) 
-var_dump($mnemonic->words); # array(24) { [0]=> string(7) "virtual" [1]=> string(4) "wear" [2]=> stri...
-var_dump($mnemonic->binaryChunks); # array(24) { [0]=> string(11) "11110100011" [1]=> string(11) "11111000011" [2]=> string(11) "10010...
-var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b"
-```
-
-## Reverse (Mnemonic to Entropy)
-
-Use mnemonic codes to find entropy. By default, lib will cross-check checksum therefore not using valid mnemonic codes
-will throw an exception.
-
-```php
-<?php
-declare(strict_types=1);
-
-use \FurqanSiddiqui\BIP39\BIP39;
-
-$mnemonic = BIP39::Words("virtual wear number paddle spike usage degree august buffalo layer high pelican basic duty gate uphold offer reopen favorite please acoustic version clay leader");
-var_dump($mnemonic->entropy); # string(64) "f47f0e5dcf6d1ddf0e70791dafc9ae512130891817769976cd50533021e58a8b"
-```
+| Type   | Description                                          |
+|--------|------------------------------------------------------| 
+| string | Returns computed PBKDF2 hash in RAW BINARY as string |
 
 ## Generate non-english mnemonic codes
 
-Mnemonic codes may be generated in ALL languages supported in BIP39 spec. This example generates 12 mnemonic codes in
-Spanish language as an example, and it may be replaced with other any other language with wordlists in BIP39 spec,
-check [here](https://github.com/bitcoin/bips/blob/master/bip-0039/bip-0039-wordlists.md).
+Check `AbstractLanguage` and `AbstractLanguageFile` classes. [English](src/Language/English.php) class has all 
+2048 words pre-loaded instead of reading from a local file every time. To implement other languages or 
+custom set of 2048 words, check [ChineseWords.php](tests/ChineseWords.php) file in `tests` directory for example of implementation.
 
 ```php
-<?php
-declare(strict_types=1);
+class CustomWords extends \FurqanSiddiqui\BIP39\Language\AbstractLanguageFile
+{
+    /**
+     * @return static
+     */
+    protected static function constructor(): static
+    {
+        return new static(
+            language: "some_language",
+            words: static::wordsFromFile(
+                pathToFile: "/path/to/wordlist.txt",
+                eolChar: PHP_EOL
+            ),
+            mbEncoding: "UTF-8"
+        );
+    }
+}
+```
 
-use \FurqanSiddiqui\BIP39\BIP39;
-use \FurqanSiddiqui\BIP39\Wordlist;
+and then use in place of `AbstractLanguage` where required:
 
-$mnemonic = (new BIP39(12, Wordlist::Spanish())) // 12 words, Spanish language
-    ->generateSecureMnemonic(); // Generate mnemonic
-    
-print implode(" ", $mnemonic->words); # bastón tímido turismo pez pez fideo pellejo persona brinco yoga rasgo diluir
-print $mnemonic->entropy; # 1c9cfbc5d93b26b12bcd8c229fdb07a2
+```php
+CustomWords::getInstance()
 ```
 
 ## Test Vectors
 
-* **[29-01-2023]:** Test vectors mentioned
-  in [official BIP-0039 specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#user-content-Test_vectors)
-  are tested and included in package. Execute `tests/test_a.php` to re-run following tests.
+Include PHPUnit tests for all test vectors mentioned in [official BIP-0039 specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki#user-content-Test_vectors). 
+Use following command to execute all tests using `phpunit.phar`
+
+```php phpunit.phar --bootstrap vendor/autoload.php tests/```

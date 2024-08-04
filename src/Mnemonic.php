@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bip39-mnemonics-php" package.
  * https://github.com/furqansiddiqui/bip39-mnemonics-php
  *
- * Copyright (c) 2019 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ * Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -18,35 +18,24 @@ namespace FurqanSiddiqui\BIP39;
  * Class Mnemonic
  * @package FurqanSiddiqui\BIP39
  */
-class Mnemonic
+readonly class Mnemonic
 {
-    /** @var int */
-    public readonly int $wordsCount;
-    /** @var array */
-    public readonly array $words;
-    /** @var array */
-    public readonly array $wordsIndex;
+    public int $wordsCount;
 
     /**
-     * @param \FurqanSiddiqui\BIP39\WordList $lang
+     * @param string $language
+     * @param array $words
+     * @param array $wordsIndex
      * @param string $entropy
-     * @param array $binaryChunks
      */
-    public function __construct(WordList $lang, public readonly string $entropy, public readonly array $binaryChunks)
+    public function __construct(
+        public string $language,
+        public array  $words,
+        public array  $wordsIndex,
+        public string $entropy
+    )
     {
-        $words = [];
-        $wordsIndex = [];
-        $wordsCount = 0;
-        foreach ($this->binaryChunks as $chunk) {
-            $index = bindec($chunk);
-            $wordsIndex[] = $index;
-            $words[] = $lang->words[$index];
-            $wordsCount++;
-        }
-
-        $this->wordsCount = $wordsCount;
-        $this->wordsIndex = $wordsIndex;
-        $this->words = $words;
+        $this->wordsCount = count($this->words);
     }
 
     /**

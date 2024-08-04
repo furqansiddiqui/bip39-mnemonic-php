@@ -1,9 +1,9 @@
 <?php
-/**
+/*
  * This file is a part of "furqansiddiqui/bip39-mnemonics-php" package.
  * https://github.com/furqansiddiqui/bip39-mnemonics-php
  *
- * Copyright (c) 2019 Furqan A. Siddiqui <hello@furqansiddiqui.com>
+ * Copyright (c) Furqan A. Siddiqui <hello@furqansiddiqui.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code or visit following link:
@@ -14,205 +14,142 @@ declare(strict_types=1);
 
 namespace FurqanSiddiqui\BIP39;
 
-use FurqanSiddiqui\BIP39\Exception\MnemonicException;
-use FurqanSiddiqui\BIP39\Exception\WordListException;
+use Charcoal\Buffers\AbstractByteArray;
+use Charcoal\Buffers\Buffer;
+use FurqanSiddiqui\BIP39\Exception\Bip39EntropyException;
+use FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException;
+use FurqanSiddiqui\BIP39\Language\AbstractLanguage;
 
 /**
- * Class BIP39
+ * Class BIP39 Mnemonic Generator
  * @package FurqanSiddiqui\BIP39
  */
 class BIP39
 {
-    /** @var int */
-    public readonly int $overallBits;
-    /** @var int */
-    public readonly int $checksumBits;
-    /** @var int */
-    public readonly int $entropyBits;
-
     /**
-     * @param string $entropy
-     * @param string|\FurqanSiddiqui\BIP39\WordList $lang
-     * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
-     */
-    public static function Entropy(string $entropy, string|WordList $lang = "english"): Mnemonic
-    {
-        static::validateHexEntropy($entropy);
-        $entropyBits = strlen($entropy) * 4;
-        $checksumBits = (($entropyBits - 128) / 32) + 4;
-        $wordsCount = ($entropyBits + $checksumBits) / 11;
-        return (new self($wordsCount, is_string($lang) ? WordList::getLanguage($lang) : $lang))
-            ->entropy2Mnemonic($entropy);
-    }
-
-    /**
+     * @param \FurqanSiddiqui\BIP39\Language\AbstractLanguage $wordList
      * @param int $wordCount
-     * @param string|\FurqanSiddiqui\BIP39\WordList $lang
      * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39EntropyException
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException
+     * @throws \Random\RandomException
      */
-    public static function Generate(int $wordCount = 12, string|WordList $lang = "english"): Mnemonic
+    public static function fromRandom(AbstractLanguage $wordList, int $wordCount = 12): Mnemonic
     {
-        return (new self($wordCount, is_string($lang) ? WordList::getLanguage($lang) : $lang))
-            ->generateSecureMnemonic();
+        return static::fromEntropy(new Buffer(random_bytes(static::wordCountToBits($wordCount)[2] / 8)), $wordList);
     }
 
     /**
-     * @param string|array $words
-     * @param string|\FurqanSiddiqui\BIP39\WordList $lang
-     * @param bool $verifyChecksum
+     * @param \Charcoal\Buffers\AbstractByteArray $entropy
+     * @param \FurqanSiddiqui\BIP39\Language\AbstractLanguage $wordList
      * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39EntropyException
      */
-    public static function Words(string|array $words, string|WordList $lang = "english", bool $verifyChecksum = true): Mnemonic
+    public static function fromEntropy(AbstractByteArray $entropy, AbstractLanguage $wordList): Mnemonic
     {
-        if (is_string($words)) {
-            $words = explode(" ", $words);
+        // Validate Entropy Length
+        $entropyBits = $entropy->len() * 8;
+        if ($entropyBits < 128 || $entropyBits % 32 !== 0) {
+            throw new Bip39EntropyException("Invalid entropy length");
         }
 
-        return (new self(count($words), is_string($lang) ? WordList::getLanguage($lang) : $lang))
-            ->words2Mnemonic($words, $verifyChecksum);
-    }
-
-    /**
-     * @param int $wordsCount
-     * @param \FurqanSiddiqui\BIP39\WordList $wordsList
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     */
-    public function __construct(public readonly int $wordsCount, public readonly WordList $wordsList)
-    {
-        if ($this->wordsCount < 12 || $this->wordsCount > 24) {
-            throw new MnemonicException('Mnemonic words count must be between 12-24');
-        } elseif ($this->wordsCount % 3 !== 0) {
-            throw new MnemonicException('Words count must be generated in multiples of 3');
+        // Convert entropy to padded
+        $entropy16 = $entropy->toBase16();
+        $entropyBn = "";
+        for ($i = 0; $i < strlen($entropy16); $i++) {
+            $entropyBn .= str_pad(base_convert($entropy16[$i], 16, 2), 4, "0", STR_PAD_LEFT);
         }
 
-        // Overall entropy bits (ENT+CS)
-        $this->overallBits = $this->wordsCount * 11;
-        // Checksum Bits are 1 bit per 3 words, starting from 12 words with 4 CS bits
-        $this->checksumBits = (($this->wordsCount - 12) / 3) + 4;
-        // Entropy Bits (ENT)
-        $this->entropyBits = $this->overallBits - $this->checksumBits;
-    }
+        // Create Checksum
+        $checksumBn = static::checksum($entropy->raw(), $entropyBits / 32);
 
-    /**
-     * @param string $entropy
-     * @return array
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     */
-    private function entropy2Chunks(string $entropy): array
-    {
-        static::validateHexEntropy($entropy);
-        return str_split($this->hex2bits($entropy) . $this->checksum($entropy), 11);
-    }
+        // Combine Entropy+Checksum and Create 11 bit chunks
+        $entropyChunks = str_split($entropyBn . $checksumBn, 11);
 
-    /**
-     * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     */
-    public function generateSecureMnemonic(): Mnemonic
-    {
-        try {
-            $prng = random_bytes($this->entropyBits / 8);
-        } catch (\Exception) {
-            throw new \RuntimeException('Failed to generate secure PRNG entropy');
+        // Find words
+        $words = [];
+        $wordsIndex = [];
+        foreach ($entropyChunks as $chunk) {
+            $index = bindec($chunk);
+            if ($index < 0 || $index >= 2048) {
+                throw new Bip39EntropyException('Bad BIP39 mnemonic entropy');
+            }
+
+            $wordsIndex[] = $index;
+            $words[] = $wordList->words[$index];
         }
 
-        return $this->entropy2Mnemonic(bin2hex($prng));
-    }
-
-    /**
-     * @param string $entropy
-     * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     */
-    public function entropy2Mnemonic(string $entropy): Mnemonic
-    {
-        return new Mnemonic($this->wordsList, $entropy, $this->entropy2Chunks($entropy));
+        // Return Mnemonic instance
+        return new Mnemonic($wordList->language, $words, $wordsIndex, $entropy16);
     }
 
     /**
      * @param array $words
+     * @param \FurqanSiddiqui\BIP39\Language\AbstractLanguage $wordList
      * @param bool $verifyChecksum
      * @return \FurqanSiddiqui\BIP39\Mnemonic
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
-     * @throws \FurqanSiddiqui\BIP39\Exception\WordListException
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException
      */
-    public function words2Mnemonic(array $words, bool $verifyChecksum = true): Mnemonic
+    public static function fromMnemonic(array $words, AbstractLanguage $wordList, bool $verifyChecksum = true): Mnemonic
     {
-        if (count($words) !== $this->wordsCount) {
-            throw new MnemonicException(
-                sprintf('Required word count of %d, got %d', $this->wordsCount, count($words))
-            );
-        }
+        $bitLen = static::wordCountToBits(count($words));
 
-        $chunks = [];
+        // Create 11-bit chunks from words
+        $chunksBn = "";
+        $wordsIndex = [];
         $pos = 0;
         foreach ($words as $word) {
             $pos++;
-            $index = $this->wordsList->findIndex($word);
+            $index = $wordList->getIndex($word);
             if (is_null($index)) {
-                throw new WordListException(sprintf('Invalid/unknown word at position %d', $pos));
+                throw new Bip39MnemonicException(sprintf('Bad BIP39 mnemonic word at index %d', $pos));
             }
 
-            $chunks[] = str_pad(decbin($index), 11, "0", STR_PAD_LEFT);
+            $wordsIndex[] = $index;
+            $chunksBn .= str_pad(decbin($index), 11, "0", STR_PAD_LEFT);
         }
 
-        $bits = implode("", $chunks);
-        $entropyBits = substr($bits, 0, $this->entropyBits);
-        $checksumBits = substr($bits, $this->entropyBits, $this->checksumBits);
-        $mnemonic = $this->entropy2Mnemonic($this->bits2hex($entropyBits));
+        $entropyBits = substr($chunksBn, 0, $bitLen[2]);
+        $checksumBits = substr($chunksBn, $bitLen[2], $bitLen[1]);
+
+        // Convert Entropy to Hexadecimal string
+        $entropy16 = "";
+        foreach (str_split($entropyBits, 4) as $chunk) {
+            $entropy16 .= base_convert($chunk, 2, 16);
+        }
 
         // Verify Checksum?
         if ($verifyChecksum) {
-            if ($checksumBits !== $this->checksum($mnemonic->entropy)) {
-                throw new MnemonicException('Entropy checksum match failed');
+            if ($checksumBits !== static::checksum(hex2bin($entropy16), $bitLen[1])) {
+                throw new Bip39MnemonicException('BIP39 mnemonic entropy checksum match failed');
             }
         }
 
-        return $mnemonic;
+        return new Mnemonic($wordList->language, $words, $wordsIndex, $entropy16);
     }
 
     /**
-     * @param string $hex
-     * @return string
+     * @param array $words
+     * @param \FurqanSiddiqui\BIP39\Language\AbstractLanguage $wordList
+     * @param bool $verifyChecksum
+     * @return \FurqanSiddiqui\BIP39\Mnemonic
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException
      */
-    private function hex2bits(string $hex): string
+    public static function fromWords(array $words, AbstractLanguage $wordList, bool $verifyChecksum = true): Mnemonic
     {
-        $bits = "";
-        for ($i = 0; $i < strlen($hex); $i++) {
-            $bits .= str_pad(base_convert($hex[$i], 16, 2), 4, "0", STR_PAD_LEFT);
-        }
-        return $bits;
+        return static::fromMnemonic($words, $wordList, $verifyChecksum);
     }
 
     /**
-     * @param string $bits
+     * @param string $entropyBn
+     * @param int $checksumBits
      * @return string
      */
-    private function bits2hex(string $bits): string
+    private static function checksum(string $entropyBn, int $checksumBits): string
     {
-        $hex = "";
-        foreach (str_split($bits, 4) as $chunk) {
-            $hex .= base_convert($chunk, 2, 16);
-        }
-
-        return $hex;
-    }
-
-    /**
-     * @param string $entropy
-     * @return string
-     */
-    private function checksum(string $entropy): string
-    {
-        $checksumChar = ord(hash("sha256", hex2bin($entropy), true)[0]);
+        $checksumChar = ord(hash("sha256", $entropyBn, true)[0]);
         $checksum = "";
-        for ($i = 0; $i < $this->checksumBits; $i++) {
+        for ($i = 0; $i < $checksumBits; $i++) {
             $checksum .= $checksumChar >> (7 - $i) & 1;
         }
 
@@ -220,18 +157,24 @@ class BIP39
     }
 
     /**
-     * @param string $entropy
-     * @return void
-     * @throws \FurqanSiddiqui\BIP39\Exception\MnemonicException
+     * @param int $wordCount
+     * @return float[]|int[]
+     * @throws \FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException
      */
-    private static function validateHexEntropy(string $entropy): void
+    private static function wordCountToBits(int $wordCount): array
     {
-        if (!preg_match('/^[a-f0-9]{2,}$/', $entropy)) {
-            throw new MnemonicException('Invalid entropy (requires hexadecimal)');
+        // Get the word count, minimum 12 and in multiplications of 3
+        if ($wordCount < 12 || $wordCount % 3 !== 0) {
+            throw new Bip39MnemonicException("Unacceptable word count for BIP39 mnemonic");
         }
 
-        if (!in_array(strlen($entropy) * 4, [128, 160, 192, 224, 256])) {
-            throw new MnemonicException('Invalid entropy length');
-        }
+        // Total bits in ENT+CS (each chunk is 11-bit)
+        $overallBits = $wordCount * 11;
+        // Checksum Bits are 1 bit per 3 words, starting from 12 words with 4 CS bits
+        $checksumBits = (($wordCount - 12) / 3) + 4;
+        // Final Entropy Bits
+        $entropyBits = $overallBits - $checksumBits;
+
+        return [$overallBits, $checksumBits, $entropyBits];
     }
 }
