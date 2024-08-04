@@ -45,7 +45,11 @@ class BIP39
      * @return \FurqanSiddiqui\BIP39\Mnemonic
      * @throws \FurqanSiddiqui\BIP39\Exception\Bip39EntropyException
      */
-    public static function fromEntropy(AbstractByteArray $entropy, AbstractLanguage $wordList): Mnemonic
+    public static function fromEntropy(
+        #[\SensitiveParameter]
+        AbstractByteArray $entropy,
+        AbstractLanguage  $wordList
+    ): Mnemonic
     {
         // Validate Entropy Length
         $entropyBits = $entropy->len() * 8;
@@ -90,7 +94,11 @@ class BIP39
      * @return \FurqanSiddiqui\BIP39\Mnemonic
      * @throws \FurqanSiddiqui\BIP39\Exception\Bip39MnemonicException
      */
-    public static function fromMnemonic(array $words, AbstractLanguage $wordList, bool $verifyChecksum = true): Mnemonic
+    public static function fromMnemonic(
+        #[\SensitiveParameter] array $words,
+        AbstractLanguage             $wordList,
+        bool                         $verifyChecksum = true
+    ): Mnemonic
     {
         $bitLen = static::wordCountToBits(count($words));
 
@@ -145,7 +153,7 @@ class BIP39
      * @param int $checksumBits
      * @return string
      */
-    private static function checksum(string $entropyBn, int $checksumBits): string
+    private static function checksum(#[\SensitiveParameter] string $entropyBn, int $checksumBits): string
     {
         $checksumChar = ord(hash("sha256", $entropyBn, true)[0]);
         $checksum = "";

@@ -30,8 +30,10 @@ readonly class Mnemonic
      */
     public function __construct(
         public string $language,
+        #[\SensitiveParameter]
         public array  $words,
         public array  $wordsIndex,
+        #[\SensitiveParameter]
         public string $entropy
     )
     {
